@@ -1,10 +1,15 @@
 #include <cstdio>
 #include <vector>
-#include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <nav_msgs/Path.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <tf/transform_broadcaster.h>
+//#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/rclcpp.hpp>
+//#include <nav_msgs/Odometry.h>
+//#include <nav_msgs/Path.h>
+#include <nav_msgs/msg/odometry.hpp>
+#include <nav_msgs/msg/path.hpp>
+//#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+//#include <tf/transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <fstream>
 #include <eigen3/Eigen/Dense>
 
@@ -54,8 +59,10 @@ struct Data
 int idx = 1;
 vector<Data> benchmark;
 
-ros::Publisher pub_odom;
-ros::Publisher pub_path;
+//ros::Publisher pub_odom;
+//ros::Publisher pub_path;
+rclcpp::Publisher<nav_msgs::Odometry>::SharedPtr pub_odom;
+rclcpp::Publisher<nav_msgs::Path>::SharedPtr pub_path;
 nav_msgs::Path path;
 
 int init = 0;
@@ -127,8 +134,11 @@ void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "benchmark_publisher");
-    ros::NodeHandle n("~");
+    //ros::init(argc, argv, "benchmark_publisher");
+    //ros::NodeHandle n("~");
+
+    rclcpp::init(argc, argv);
+    auto n = rclcpp::Node("benchmark_publisher");
 
     string csv_file = readParam<string>(n, "data_name");
     std::cout << "load ground truth " << csv_file << std::endl;
@@ -150,11 +160,14 @@ int main(int argc, char **argv)
     benchmark.pop_back();
     ROS_INFO("Data loaded: %d", (int)benchmark.size());
 
-    pub_odom = n.advertise<nav_msgs::Odometry>("odometry", 1000);
-    pub_path = n.advertise<nav_msgs::Path>("path", 1000);
-
-    ros::Subscriber sub_odom = n.subscribe("estimated_odometry", 1000, odom_callback);
+    //pub_odom = n.advertise<nav_msgs::Odometry>("odometry", 1000);
+    //pub_path = n.advertise<nav_msgs::Path>("path", 1000);
+    pub_odom = n.create_publisher<nav_msgs::Odometry>("odometry", 1000);
+    pub_path = n.create_publisher<nav_msgs::Path>("path", 1000);
+    //ros::Subscriber sub_odom = n.subscribe("estimated_odometry", 1000, odom_callback);
     
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_odom = n.create_subscription<nav_msgs::OdometryConstPtr>(
+      "estimated_odometry", 1000, std::bind(odom_callback, this, _1));
     ros::Rate r(20);
     ros::spin();
 }

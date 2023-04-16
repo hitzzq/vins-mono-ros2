@@ -1,12 +1,12 @@
 #ifndef EIGENQUATERNIONPARAMETERIZATION_H
 #define EIGENQUATERNIONPARAMETERIZATION_H
 
-#include "ceres/local_parameterization.h"
+#include "ceres/manifold.h"
 
 namespace camodocal
 {
 
-class EigenQuaternionParameterization : public ceres::LocalParameterization
+class EigenQuaternionParameterization : public ceres::Manifold
 {
 public:
     virtual ~EigenQuaternionParameterization() {}
