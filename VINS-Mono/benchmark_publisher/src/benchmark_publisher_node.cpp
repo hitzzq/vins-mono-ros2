@@ -20,17 +20,22 @@ const int SKIP = 50;
 string benchmark_output_path;
 string estimate_output_path;
 template <typename T>
-T readParam(ros::NodeHandle &n, std::string name)
+T readParam(rclcpp::Node::SharedPtr n, std::string name)
 {
     T ans;
-    if (n.getParam(name, ans))
+    if (n->get_parameter(name, ans))
     {
-        ROS_INFO_STREAM("Loaded " << name << ": " << ans);
+        //ROS_INFO_STREAM("Loaded " << name << ": " << ans);
+        //RCLCPP_INFO("Loaded %s:", name.c_str());
+        printf("Loaded %s:\n",name.c_str());
+        std::cout<<ans<<std::endl;
+
     }
     else
     {
-        ROS_ERROR_STREAM("Failed to load " << name);
-        n.shutdown();
+        //RCLCPP_ERROR("Failed to load %s", name.c_str());
+        printf("Failed to load %s",name.c_str());
+        rclcpp::shutdown();
     }
     return ans;
 }
@@ -61,16 +66,16 @@ vector<Data> benchmark;
 
 //ros::Publisher pub_odom;
 //ros::Publisher pub_path;
-rclcpp::Publisher<nav_msgs::Odometry>::SharedPtr pub_odom;
-rclcpp::Publisher<nav_msgs::Path>::SharedPtr pub_path;
-nav_msgs::Path path;
+rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom;
+rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path;
+nav_msgs::msg::Path path;
 
 int init = 0;
 Quaterniond baseRgt;
 Vector3d baseTgt;
 tf::Transform trans;
 
-void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg)
+void odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg)
 {
     //ROS_INFO("odom callback!");
     if (odom_msg->header.stamp.toSec() > benchmark.back().t)
@@ -97,8 +102,8 @@ void odom_callback(const nav_msgs::OdometryConstPtr &odom_msg)
         return;
     }
 
-    nav_msgs::Odometry odometry;
-    odometry.header.stamp = ros::Time(benchmark[idx - 1].t);
+    nav_msgs::msg::Odometry odometry;
+    odometry.header.stamp = rclcpp::Time(benchmark[idx - 1].t);
     odometry.header.frame_id = "world";
     odometry.child_frame_id = "world";
 
@@ -138,36 +143,41 @@ int main(int argc, char **argv)
     //ros::NodeHandle n("~");
 
     rclcpp::init(argc, argv);
-    auto n = rclcpp::Node("benchmark_publisher");
+    auto n = rclcpp::Node::make_shared("benchmark_publisher");
 
     string csv_file = readParam<string>(n, "data_name");
     std::cout << "load ground truth " << csv_file << std::endl;
     FILE *f = fopen(csv_file.c_str(), "r");
     if (f==NULL)
     {
-      ROS_WARN("can't load ground truth; wrong path");
+      //RCLCPP_WARN("can't load ground truth; wrong path");
+      printf("can't load ground truth; wrong path\n");
       //std::cerr << "can't load ground truth; wrong path " << csv_file << std::endl;
       return 0;
     }
     char tmp[10000];
     if (fgets(tmp, 10000, f) == NULL)
     {
-        ROS_WARN("can't load ground truth; no data available");
+        //RCLCPP_WARN("can't load ground truth; no data available");
+        printf("can't load ground truth; no data available\n");
     }
     while (!feof(f))
         benchmark.emplace_back(f);
     fclose(f);
     benchmark.pop_back();
-    ROS_INFO("Data loaded: %d", (int)benchmark.size());
+    //RCLCPP_INFO("Data loaded: %d", (int)benchmark.size());
+    printf("Data loaded: %d\n",(int)benchmark.size());
 
     //pub_odom = n.advertise<nav_msgs::Odometry>("odometry", 1000);
     //pub_path = n.advertise<nav_msgs::Path>("path", 1000);
-    pub_odom = n.create_publisher<nav_msgs::Odometry>("odometry", 1000);
-    pub_path = n.create_publisher<nav_msgs::Path>("path", 1000);
+    pub_odom = n->create_publisher<nav_msgs::msg::Odometry>("odometry", 1000);
+    pub_path = n->create_publisher<nav_msgs::msg::Path>("path", 1000);
     //ros::Subscriber sub_odom = n.subscribe("estimated_odometry", 1000, odom_callback);
     
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr sub_odom = n.create_subscription<nav_msgs::OdometryConstPtr>(
-      "estimated_odometry", 1000, std::bind(odom_callback, this, _1));
-    ros::Rate r(20);
-    ros::spin();
+    rclcpp::Subscription<std_msgs::msg::Odometry>::SharedPtr sub_odom = n->create_subscription<nav_msgs::msg::Odometry>(
+      "estimated_odometry", rclcpp::Qos(rclcpp::KeepLast(100)), std::bind(odom_callback, this, _1));
+    //ros::Rate r(20);
+    //ros::spin();
+    rclcpp::spin(n)
+    return 0;
 }

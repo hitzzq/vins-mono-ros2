@@ -232,7 +232,7 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
         cv::Mat& image = images.at(i);
         if (image.channels() == 1)
         {
-            cv::cvtColor(image, image, CV_GRAY2RGB);
+            cv::cvtColor(image, image, cv::COLOR_GRAY2RGB);
         }
 
         std::vector<cv::Point2f> estImagePoints;
@@ -250,12 +250,12 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
             cv::circle(image,
                        cv::Point(cvRound(pObs.x * drawMultiplier),
                                  cvRound(pObs.y * drawMultiplier)),
-                       5, green, 2, CV_AA, drawShiftBits);
+                       5, green, 2, cv::LINE_AA, drawShiftBits);
 
             cv::circle(image,
                        cv::Point(cvRound(pEst.x * drawMultiplier),
                                  cvRound(pEst.y * drawMultiplier)),
-                       5, red, 2, CV_AA, drawShiftBits);
+                       5, red, 2, cv::LINE_AA, drawShiftBits);
 
             float error = cv::norm(pObs - pEst);
 
@@ -272,7 +272,7 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
 
         cv::putText(image, oss.str(), cv::Point(10, image.rows - 10),
                     cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(255, 255, 255),
-                    1, CV_AA);
+                    1, cv::LINE_AA);
     }
 }
 
@@ -503,11 +503,18 @@ CameraCalibration::optimize(CameraPtr& camera,
                                      transformVec.at(i).rotationData(),
                                      transformVec.at(i).translationData());
         }
-
+#if 0
         ceres::Manifold* quaternionParameterization =
-            new EigenQuaternionParameterization;
+            new ceres::EigenQuaternionParameterization;
 
         problem.SetParameterization(transformVec.at(i).rotationData(),
+                                    quaternionParameterization);
+#endif
+
+        ceres::Manifold* quaternionParameterization =
+            new ceres::EigenQuaternionManifold;
+
+        problem.SetManifold(transformVec.at(i).rotationData(),
                                     quaternionParameterization);
     }
 

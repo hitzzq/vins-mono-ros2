@@ -5,9 +5,15 @@
 #include "camodocal/camera_models/PinholeCamera.h"
 #include <eigen3/Eigen/Dense>
 #include <rclcpp/rclcpp.hpp>
+#if 0
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/image_encodings.h>
+#endif
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/point_cloud.hpp>
+#include <sensor_msgs/image_encodings.hpp>
+
 #include <cv_bridge/cv_bridge.h>
 
 extern camodocal::CameraPtr m_camera;

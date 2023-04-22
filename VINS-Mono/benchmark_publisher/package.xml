@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package  format="3">
+<package format='3'>
   <name>benchmark_publisher</name>
   <version>0.0.0</version>
   <description>The benchmark_publisher package</description>
@@ -48,7 +48,7 @@
   
   <depend>nav_msgs</depend>
   
-  <depend>camera_models</depend>
+  <depend>camera_model</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

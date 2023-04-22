@@ -1,9 +1,18 @@
 #pragma once
 
 #include <rclcpp/rclcpp.hpp>
+#if 0
 #include <std_msgs/ColorRGBA.h>
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
+#endif
+//#include <std_msgs/ColorRGBA.h>
+#include <std_msgs/msg/color_rgba.hpp>
+//#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/msg/marker.hpp>
+//#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker_array.hpp>
+
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <opencv2/opencv.hpp>

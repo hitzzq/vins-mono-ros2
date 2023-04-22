@@ -9,9 +9,16 @@
 #include <ceres/rotation.h>
 #include <queue>
 #include <assert.h>
+#if 0
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PointStamped.h>
 #include <nav_msgs/Odometry.h>
+#endif
+#include <nav_msgs/msg/path.hpp>
+//#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <nav_msgs/msg/odometry.hpp>
+
 #include <stdio.h>
 #include <rclcpp/rclcpp.hpp>
 #include "keyframe.h"
