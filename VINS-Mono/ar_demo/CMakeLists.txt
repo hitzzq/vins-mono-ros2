@@ -5,7 +5,8 @@ endif()
 project(ar_demo)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++14 -DEIGEN_DONT_PARALLELIZE")
+#set(CMAKE_CXX_FLAGS "-std=c++14 -DEIGEN_DONT_PARALLELIZE")
+set(CMAKE_CXX_FLAGS "-std=c++17 -DEIGEN_DONT_PARALLELIZE")
 #-DEIGEN_USE_MKL_ALL")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
@@ -28,7 +29,9 @@ find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(camera_model REQUIRED)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 #catkin_package(
 #)
@@ -54,10 +57,21 @@ add_executable(ar_demo_node src/ar_demo_node.cpp)
 #   ${catkin_LIBRARIES} ${OpenCV_LIBS}
 # )
 
-ament_target_dependencies(ar_demo_node rclcpp)
+ament_target_dependencies(ar_demo_node rclcpp camera_model image_transport cv_bridge nav_msgs visualization_msgs)
  target_link_libraries(ar_demo_node
   ${OpenCV_LIBS}
-#  rclcpp::rclcpp
+  rclcpp::rclcpp
  )
-
+install(TARGETS ar_demo_node
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+# Install launch files
+install(DIRECTORY
+    launch
+    # config
+    # rviz
+    DESTINATION share/${PROJECT_NAME}
+    )
 ament_package()

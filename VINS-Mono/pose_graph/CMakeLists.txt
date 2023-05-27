@@ -5,7 +5,7 @@ endif()
 project(pose_graph)
 
 set(CMAKE_BUILD_TYPE "Release")
-set(CMAKE_CXX_FLAGS "-std=c++14")
+set(CMAKE_CXX_FLAGS "-std=c++17")
 #-DEIGEN_USE_MKL_ALL")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 
@@ -26,13 +26,26 @@ find_package(cv_bridge REQUIRED)
 
 find_package(camera_model REQUIRED)
 
-find_package(OpenCV)
+find_package(OpenCV 4 REQUIRED)
 
 
 find_package(Ceres REQUIRED)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(Eigen3)
+
+find_package(rclcpp REQUIRED)
+find_package(rcpputils REQUIRED)
+
+find_package(geometry_msgs REQUIRED)
+
+find_package(visualization_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+
+find_package(image_transport REQUIRED)
+
 
 include_directories(${CERES_INCLUDE_DIRS}  ${EIGEN3_INCLUDE_DIR})
 include_directories("../camera_model/include")
@@ -57,4 +70,16 @@ add_executable(pose_graph
 
 target_link_libraries(pose_graph ${OpenCV_LIBS} ${CERES_LIBRARIES} rclcpp::rclcpp) 
 # message("catkin_lib  ${catkin_LIBRARIES}")
+
+target_link_libraries(pose_graph ${OpenCV_LIBS} ${CERES_LIBRARIES} rclcpp::rclcpp) 
+
+ament_target_dependencies(pose_graph rclcpp rcpputils std_msgs geometry_msgs nav_msgs tf2 tf2_ros cv_bridge camera_model image_transport visualization_msgs)
+
+# Install binaries
+install(TARGETS pose_graph
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
 ament_package()

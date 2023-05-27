@@ -6,7 +6,7 @@ project(benchmark_publisher)
 
 set(CMAKE_BUILD_TYPE "Release")
 #set(CMAKE_CXX_FLAGS "-std=c++11 -DEIGEN_DONT_PARALLELIZE")
-set(CMAKE_CXX_FLAGS "-std=c++14 -DEIGEN_DONT_PARALLELIZE")
+set(CMAKE_CXX_FLAGS "-std=c++17 -DEIGEN_DONT_PARALLELIZE")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g -rdynamic")
 
 
@@ -36,3 +36,31 @@ add_executable(benchmark_publisher
 ament_target_dependencies(benchmark_publisher rclcpp rcpputils nav_msgs tf2 tf2_ros)
 #target_link_libraries(benchmark_publisher ${catkin_LIBRARIES})
 #target_link_libraries(benchmark_publisher rclcpp::rclcpp)
+
+install(TARGETS
+    benchmark_publisher
+    DESTINATION lib/${PROJECT_NAME}
+    )
+
+
+install(TARGETS benchmark_publisher
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(TARGETS benchmark_publisher
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+  
+install(DIRECTORY cmake/
+    DESTINATION cmake/
+)
+# Install launch files
+install(DIRECTORY
+    launch
+    # config
+    # rviz
+    DESTINATION share/${PROJECT_NAME}
+    )
+ament_package()

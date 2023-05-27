@@ -1,5 +1,5 @@
 #include <rclcpp/rclcpp.hpp>
-//#include <std_msgs/ColorRGBA.h>
+//#include <std_msgs/msg/color_rgba.h>
 #include <std_msgs/msg/color_rgba.hpp>
 //#include <visualization_msgs/Marker.h>
 #include <visualization_msgs/msg/marker.hpp>
@@ -57,7 +57,8 @@ bool USE_UNDISTORED_IMG;
 bool pose_init = false;
 int img_cnt = 0;
 
-ros::Publisher object_pub;
+//rclcpp::Publisher<>::SharedPtr object_pub;
+rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr object_pub;
 image_transport::Publisher pub_ARimage;
 Vector3d Axis[6];
 Vector3d Cube_center[3];
@@ -66,28 +67,28 @@ vector<Vector3d> output_Axis[6];
 vector<Vector3d> output_Cube[3];
 vector<double> output_corner_dis[3];
 double Cube_center_depth[3];
-queue<ImageConstPtr> img_buf;
+queue<sensor_msgs::msg::Image::SharedPtr> img_buf;
 camodocal::CameraPtr m_camera;
 bool look_ground = 0;
-std_msgs::ColorRGBA line_color_r;
-std_msgs::ColorRGBA line_color_g;
-std_msgs::ColorRGBA line_color_b;
+std_msgs::msg::ColorRGBA line_color_r;
+std_msgs::msg::ColorRGBA line_color_g;
+std_msgs::msg::ColorRGBA line_color_b;
 
-void axis_generate(visualization_msgs::Marker &line_list, Vector3d &origin, int id)
+void axis_generate(visualization_msgs::msg::Marker &line_list, Vector3d &origin, int id)
 {
 
     line_list.id = id;
     line_list.header.frame_id = "world";
-    line_list.header.stamp = ros::Time::now();
-    line_list.action = visualization_msgs::Marker::ADD;
-    line_list.type = visualization_msgs::Marker::LINE_LIST;
+    line_list.header.stamp = rclcpp::Clock().now();
+    line_list.action = visualization_msgs::msg::Marker::ADD;
+    line_list.type = visualization_msgs::msg::Marker::LINE_LIST;
     line_list.scale.x = 0.1;
     line_list.color.a = 1.0;
-    line_list.lifetime = ros::Duration();
+    line_list.lifetime = rclcpp::Duration(0);
     
     line_list.pose.orientation.w = 1.0;
     line_list.color.b = 1.0;
-    geometry_msgs::Point p;
+    geometry_msgs::msg::Point p;
     p.x = origin.x();
     p.y = origin.y();
     p.z = origin.z();
@@ -110,17 +111,17 @@ void axis_generate(visualization_msgs::Marker &line_list, Vector3d &origin, int 
     line_list.colors.push_back(line_color_b);
 }
 
-void cube_generate(visualization_msgs::Marker &marker, Vector3d &origin, int id)
+void cube_generate(visualization_msgs::msg::Marker &marker, Vector3d &origin, int id)
 {
 
-    //uint32_t shape = visualization_msgs::Marker::CUBE;
+    //uint32_t shape = visualization_msgs::msg::Marker::CUBE;
     marker.header.frame_id = "world";
-    marker.header.stamp = ros::Time::now();
+    marker.header.stamp = rclcpp::Clock().now();
     marker.ns = "basic_shapes";
     marker.id = 0;
     //marker.type = shape;
-    marker.action = visualization_msgs::Marker::ADD;
-    marker.type = visualization_msgs::Marker::CUBE_LIST;
+    marker.action = visualization_msgs::msg::Marker::ADD;
+    marker.type = visualization_msgs::msg::Marker::CUBE_LIST;
     /*
     marker.pose.position.x = origin.x();
     marker.pose.position.y = origin.y();
@@ -139,8 +140,8 @@ void cube_generate(visualization_msgs::Marker &marker, Vector3d &origin, int id)
     marker.color.b = 0.0f;
     marker.color.a = 1.0;
 
-    marker.lifetime = ros::Duration();  
-    geometry_msgs::Point p;
+    marker.lifetime = rclcpp::Duration(0);  
+    geometry_msgs::msg::Point p;
     p.x = origin.x();
     p.y = origin.y();
     p.z = origin.z();
@@ -159,10 +160,10 @@ void cube_generate(visualization_msgs::Marker &marker, Vector3d &origin, int id)
 
 void add_object()
 {
-    visualization_msgs::MarkerArray markerArray_msg;
+    visualization_msgs::msg::MarkerArray markerArray_msg;
 
-    visualization_msgs::Marker line_list;
-    visualization_msgs::Marker cube_list;
+    visualization_msgs::msg::Marker line_list;
+    visualization_msgs::msg::Marker cube_list;
 
     for (int i = 0; i < axis_num; i++)
     {
@@ -177,7 +178,7 @@ void add_object()
     //cube_generate(cube_list, Cube_center[2], 2);
     markerArray_msg.markers.push_back(cube_list);
 
-    object_pub.publish(markerArray_msg);
+    object_pub->publish(markerArray_msg);
 }
 
 void project_object(Vector3d camera_p, Quaterniond camera_q)
@@ -234,13 +235,13 @@ void project_object(Vector3d camera_p, Quaterniond camera_q)
                 output_corner_dis[i].push_back(local_point.norm());
                 if (USE_UNDISTORED_IMG)
                 {
-                    //ROS_INFO("directly project!");
+                    //printf("directly project!");
                     local_uv.x() = local_point(0) / local_point(2) * FOCAL_LENGTH + COL / 2;
                     local_uv.y() = local_point(1) / local_point(2) * FOCAL_LENGTH + ROW / 2;
                 }
                 else
                 {
-                    //ROS_INFO("camera model project!");
+                    //printf("camera model project!");
                     m_camera->spaceToPlane(local_point, local_uv);
                     local_uv.x() = std::min(std::max(-5000.0, local_uv.x()),5000.0);
                     local_uv.y() = std::min(std::max(-5000.0, local_uv.y()),5000.0);
@@ -364,7 +365,7 @@ void draw_object(cv::Mat &AR_image)
     }
 }
 
-void callback(const ImageConstPtr& img_msg, const nav_msgs::Odometry::ConstPtr pose_msg)
+void callback(const sensor_msgs::msg::Image::SharedPtr img_msg, const nav_msgs::msg::Odometry::ConstPtr pose_msg)
 {
     //throw the first few unstable pose
     if(img_cnt < 50)
@@ -372,7 +373,7 @@ void callback(const ImageConstPtr& img_msg, const nav_msgs::Odometry::ConstPtr p
         img_cnt ++;
         return;
     }
-   //ROS_INFO("sync callback!");
+   //printf("sync callback!");
    Vector3d camera_p(pose_msg->pose.pose.position.x,
                      pose_msg->pose.pose.position.y,
                      pose_msg->pose.pose.position.z);
@@ -398,7 +399,7 @@ void callback(const ImageConstPtr& img_msg, const nav_msgs::Odometry::ConstPtr p
    cv_bridge::CvImageConstPtr ptr;
    if (img_msg->encoding == "8UC1")
    {
-       sensor_msgs::Image img;
+       sensor_msgs::msg::Image img;
        img.header = img_msg->header;
        img.height = img_msg->height;
        img.width = img_msg->width;
@@ -417,11 +418,11 @@ void callback(const ImageConstPtr& img_msg, const nav_msgs::Odometry::ConstPtr p
    cv::cvtColor(AR_image, AR_image, cv::COLOR_GRAY2RGB);
    draw_object(AR_image);
 
-   sensor_msgs::ImagePtr AR_msg = cv_bridge::CvImage(img_msg->header, "bgr8", AR_image).toImageMsg();
+   sensor_msgs::msg::Image::SharedPtr AR_msg = cv_bridge::CvImage(img_msg->header, "bgr8", AR_image).toImageMsg();
    pub_ARimage.publish(AR_msg);
 
 }
-void point_callback(const sensor_msgs::PointCloudConstPtr &point_msg)
+void point_callback(const sensor_msgs::msg::PointCloud::SharedPtr point_msg)
 {
     if (!look_ground)
         return;
@@ -462,7 +463,7 @@ void point_callback(const sensor_msgs::PointCloudConstPtr &point_msg)
     //ROS_WARN("detect ground plain, height %f", new_height);
     if (tmp_num < (int)point_msg->points.size() / 2)
     {
-        //ROS_INFO("points not enough");
+        //printf("points not enough");
         return;
     }
     //update height
@@ -473,7 +474,7 @@ void point_callback(const sensor_msgs::PointCloudConstPtr &point_msg)
     add_object();
 
 }
-void img_callback(const ImageConstPtr& img_msg)
+void img_callback(const sensor_msgs::msg::Image::SharedPtr img_msg)
 {
     if(pose_init)
     {
@@ -482,7 +483,7 @@ void img_callback(const ImageConstPtr& img_msg)
     else
         return;
 }
-void pose_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
+void pose_callback(const nav_msgs::msg::Odometry::SharedPtr pose_msg)
 {
     if(!pose_init)
     {
@@ -496,7 +497,7 @@ void pose_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
         return;
     }
 
-    while (img_buf.front()->header.stamp < pose_msg->header.stamp && !img_buf.empty())
+    while ((img_buf.front()->header.stamp.sec + img_buf.front()->header.stamp.nanosec*(1e-9) < (pose_msg->header.stamp.sec+pose_msg->header.stamp.nanosec*(1e-9))) && !img_buf.empty())
     {
         img_buf.pop();
     }
@@ -511,25 +512,27 @@ void pose_callback(const nav_msgs::Odometry::ConstPtr &pose_msg)
 }
 int main( int argc, char** argv )
 {
-    ros::init(argc, argv, "points_and_lines");
-    ros::NodeHandle n("~");
-    object_pub = n.advertise<visualization_msgs::MarkerArray>("AR_object", 10);
-    n.getParam("use_undistored_img", USE_UNDISTORED_IMG);
-    ros::Subscriber sub_img;
+    rclcpp::init(argc, argv);
+    auto n = rclcpp::Node::make_shared("points_and_lines");
+    //object_pub = n->create_publisher<visualization_msgs::msg::MarkerArray>("AR_object", 10);
+    object_pub = n->create_publisher<visualization_msgs::msg::MarkerArray>("AR_object", 10);
+    n->get_parameter("use_undistored_img", USE_UNDISTORED_IMG);
+    //ros::Subscriber sub_img;
     if (USE_UNDISTORED_IMG)
     {
         // the same as image crop
         ROW = 600;
         COL = 480;
         FOCAL_LENGTH = 320.0;
-        sub_img = n.subscribe("image_undistored", 100, img_callback);
+        //sub_img = n.subscribe("image_undistored", 100, img_callback);
+        auto sub_img = n->create_subscription<sensor_msgs::msg::Image>("image_undistored", rclcpp::QoS(rclcpp::KeepLast(100)), img_callback);
     }
     else
     {
         ROW = 752;
         COL = 480;
         FOCAL_LENGTH = 460.0;
-        sub_img = n.subscribe("image_raw", 100, img_callback);
+        auto sub_img = n->create_subscription<sensor_msgs::msg::Image>("image_raw", rclcpp::QoS(rclcpp::KeepLast(100)), img_callback);
     }
 
     Axis[0] = Vector3d(0, 1.5, -1.2);
@@ -544,8 +547,8 @@ int main( int argc, char** argv )
     Cube_center[1] = Vector3d(4, -2, -1.2 + box_length / 2.0);
     Cube_center[2] = Vector3d(0, -2, -1.2 + box_length / 2.0);
 
-    ros::Subscriber pose_img = n.subscribe("camera_pose", 100, pose_callback);
-    ros::Subscriber sub_point = n.subscribe("pointcloud", 2000, point_callback);
+    auto pose_img = n->create_subscription<nav_msgs::msg::Odometry>("camera_pose", rclcpp::QoS(rclcpp::KeepLast(100)), pose_callback);
+    auto sub_point = n->create_subscription<sensor_msgs::msg::PointCloud>("pointcloud", rclcpp::QoS(rclcpp::KeepLast(2000)), point_callback);
     image_transport::ImageTransport it(n);
     pub_ARimage = it.advertise("AR_image", 1000);
 
@@ -557,14 +560,14 @@ int main( int argc, char** argv )
     line_color_b.a = 1.0;
 
     string calib_file;
-    n.getParam("calib_file", calib_file);
-    ROS_INFO("reading paramerter of camera %s", calib_file.c_str());
+    n->get_parameter("calib_file", calib_file);
+    printf("reading paramerter of camera %s", calib_file.c_str());
     m_camera = CameraFactory::instance()->generateCameraFromYamlFile(calib_file);
 
-    ros::Rate r(100);
-    ros::Duration(1).sleep();
+    //ros::Rate r(100);
+    //rclcpp::Duration(1).sleep();
     add_object();
     add_object();
-    ros::spin();
+    rclcpp::spin(n);
 }
 

@@ -64,8 +64,8 @@ struct Data
 int idx = 1;
 vector<Data> benchmark;
 
-//ros::Publisher pub_odom;
-//ros::Publisher pub_path;
+//rclcpp::Publisher<>::SharedPtr pub_odom;
+//rclcpp::Publisher<>::SharedPtr pub_path;
 rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom;
 rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path;
 nav_msgs::msg::Path path;
@@ -73,15 +73,15 @@ nav_msgs::msg::Path path;
 int init = 0;
 Quaterniond baseRgt;
 Vector3d baseTgt;
-tf::Transform trans;
+//tf::Transform trans;
 
 void odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg)
 {
-    //ROS_INFO("odom callback!");
-    if (odom_msg->header.stamp.toSec() > benchmark.back().t)
+    //printf("odom callback!");
+    if (odom_msg->header.stamp.sec > benchmark.back().t)
       return;
   
-    for (; idx < static_cast<int>(benchmark.size()) && benchmark[idx].t <= odom_msg->header.stamp.toSec(); idx++)
+    for (; idx < static_cast<int>(benchmark.size()) && benchmark[idx].t <= odom_msg->header.stamp.sec; idx++)
         ;
 
 
@@ -127,14 +127,14 @@ void odom_callback(const nav_msgs::msg::Odometry::SharedPtr odom_msg)
     odometry.twist.twist.linear.x = tmp_V.x();
     odometry.twist.twist.linear.y = tmp_V.y();
     odometry.twist.twist.linear.z = tmp_V.z();
-    pub_odom.publish(odometry);
+    pub_odom->publish(odometry);
 
-    geometry_msgs::PoseStamped pose_stamped;
+    geometry_msgs::msg::PoseStamped pose_stamped;
     pose_stamped.header = odometry.header;
     pose_stamped.pose = odometry.pose.pose;
     path.header = odometry.header;
     path.poses.push_back(pose_stamped);
-    pub_path.publish(path);
+    pub_path->publish(path);
 }
 
 int main(int argc, char **argv)
@@ -168,16 +168,16 @@ int main(int argc, char **argv)
     //RCLCPP_INFO("Data loaded: %d", (int)benchmark.size());
     printf("Data loaded: %d\n",(int)benchmark.size());
 
-    //pub_odom = n.advertise<nav_msgs::Odometry>("odometry", 1000);
-    //pub_path = n.advertise<nav_msgs::Path>("path", 1000);
+    //pub_odom = n->create_publisher<nav_msgs::Odometry>("odometry", 1000);
+    //pub_path = n->create_publisher<nav_msgs::Path>("path", 1000);
     pub_odom = n->create_publisher<nav_msgs::msg::Odometry>("odometry", 1000);
     pub_path = n->create_publisher<nav_msgs::msg::Path>("path", 1000);
     //ros::Subscriber sub_odom = n.subscribe("estimated_odometry", 1000, odom_callback);
     
-    rclcpp::Subscription<std_msgs::msg::Odometry>::SharedPtr sub_odom = n->create_subscription<nav_msgs::msg::Odometry>(
-      "estimated_odometry", rclcpp::Qos(rclcpp::KeepLast(100)), std::bind(odom_callback, this, _1));
+    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom = n->create_subscription<nav_msgs::msg::Odometry>(
+      "estimated_odometry", rclcpp::QoS(rclcpp::KeepLast(100)), odom_callback);//std::bind(odom_callback, this, std::placeholders::_1));
     //ros::Rate r(20);
     //ros::spin();
-    rclcpp::spin(n)
+    rclcpp::spin(n);
     return 0;
 }

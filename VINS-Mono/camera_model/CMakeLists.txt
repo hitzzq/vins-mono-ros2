@@ -8,11 +8,12 @@ project(camera_model)
 #set(CMAKE_CXX_FLAGS "-std=c++11")
 #set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fPIC")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 add_compile_options(-Wextra -Wpedantic)
 
 
 find_package(ament_cmake REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcpputils REQUIRED)
 
@@ -22,14 +23,14 @@ find_package(std_msgs REQUIRED)
 find_package(Boost REQUIRED COMPONENTS filesystem program_options system)
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 
 # set(EIGEN_INCLUDE_DIR "/usr/local/include/eigen3")
 find_package(Ceres REQUIRED)
 include_directories(${CERES_INCLUDE_DIRS})
 
 ament_export_include_directories(include)
-ament_export_libraries(camera_models)
+ament_export_libraries(camera_model)
 ament_export_dependencies(std_msgs)
 
 #catkin_package(
@@ -77,4 +78,25 @@ add_library(camera_model
 
 target_link_libraries(Calibration ${Boost_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES})
 target_link_libraries(camera_model ${Boost_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES})
+# Install
+install(TARGETS
+    Calibration
+    DESTINATION lib/${PROJECT_NAME}
+    )
+
+
+install(TARGETS Calibration camera_model
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(TARGETS Calibration
+    RUNTIME DESTINATION lib/${PROJECT_NAME}
+)
+  
+install(DIRECTORY include/
+    DESTINATION include/
+)
+  
 ament_package()

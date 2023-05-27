@@ -19,8 +19,8 @@
 extern camodocal::CameraPtr m_camera;
 extern Eigen::Vector3d tic;
 extern Eigen::Matrix3d qic;
-extern ros::Publisher pub_match_img;
-extern ros::Publisher pub_match_points;
+extern rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_match_img;
+extern rclcpp::Publisher<sensor_msgs::msg::PointCloud>::SharedPtr pub_match_points;
 extern int VISUALIZATION_SHIFT_X;
 extern int VISUALIZATION_SHIFT_Y;
 extern std::string BRIEF_PATTERN_FILE;

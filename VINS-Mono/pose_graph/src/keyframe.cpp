@@ -441,9 +441,9 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	                cv::line(loop_match_img, matched_2d_cur[i], old_pt, cv::Scalar(0, 255, 0), 2, 8, 0);
 	            }
 	            cv::Mat notation(50, COL + gap + COL, CV_8UC3, cv::Scalar(255, 255, 255));
-	            putText(notation, "current frame: " + to_string(index) + "  sequence: " + to_string(sequence), cv::Point2f(20, 30), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255), 3);
+	            putText(notation, "current frame: " + to_string(index) + "  sequence: " + to_string(sequence), cv::Point2f(20, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255), 3);
 
-	            putText(notation, "previous frame: " + to_string(old_kf->index) + "  sequence: " + to_string(old_kf->sequence), cv::Point2f(20 + COL + gap, 30), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255), 3);
+	            putText(notation, "previous frame: " + to_string(old_kf->index) + "  sequence: " + to_string(old_kf->sequence), cv::Point2f(20 + COL + gap, 30), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255), 3);
 	            cv::vconcat(notation, loop_match_img, loop_match_img);
 
 	            /*
@@ -461,9 +461,9 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	            	*/
 	            	cv::Mat thumbimage;
 	            	cv::resize(loop_match_img, thumbimage, cv::Size(loop_match_img.cols / 2, loop_match_img.rows / 2));
-	    	    	sensor_msgs::ImagePtr msg = cv_bridge::CvImage(std_msgs::Header(), "bgr8", thumbimage).toImageMsg();
-	                msg->header.stamp = ros::Time(time_stamp);
-	    	    	pub_match_img.publish(msg);
+	    	    	sensor_msgs::msg::Image::SharedPtr msg = cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", thumbimage).toImageMsg();
+	                msg->header.stamp = rclcpp::Time(time_stamp);
+	    	    	pub_match_img->publish(*msg);
 	            }
 	        }
 	    #endif
@@ -487,11 +487,11 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 	    	             relative_yaw;
 	    	if(FAST_RELOCALIZATION)
 	    	{
-			    sensor_msgs::PointCloud msg_match_points;
-			    msg_match_points.header.stamp = ros::Time(time_stamp);
+			    sensor_msgs::msg::PointCloud msg_match_points;
+			    msg_match_points.header.stamp = rclcpp::Time(time_stamp);
 			    for (int i = 0; i < (int)matched_2d_old_norm.size(); i++)
 			    {
-		            geometry_msgs::Point32 p;
+		            geometry_msgs::msg::Point32 p;
 		            p.x = matched_2d_old_norm[i].x;
 		            p.y = matched_2d_old_norm[i].y;
 		            p.z = matched_id[i];
@@ -500,7 +500,7 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 			    Eigen::Vector3d T = old_kf->T_w_i; 
 			    Eigen::Matrix3d R = old_kf->R_w_i;
 			    Quaterniond Q(R);
-			    sensor_msgs::ChannelFloat32 t_q_index;
+			    sensor_msgs::msg::ChannelFloat32 t_q_index;
 			    t_q_index.values.push_back(T.x());
 			    t_q_index.values.push_back(T.y());
 			    t_q_index.values.push_back(T.z());
@@ -510,7 +510,7 @@ bool KeyFrame::findConnection(KeyFrame* old_kf)
 			    t_q_index.values.push_back(Q.z());
 			    t_q_index.values.push_back(index);
 			    msg_match_points.channels.push_back(t_q_index);
-			    pub_match_points.publish(msg_match_points);
+			    pub_match_points->publish(msg_match_points);
 	    	}
 	        return true;
 	    }
